@@ -19,7 +19,7 @@ public class Producto {
     private Long id;
 
     @Column(nullable = false, unique = true)
-    private String sku; 
+    private String sku; // codigo unico del producto, ej: "PROD-001"
 
     @Column(nullable = false)
     private String nombre;

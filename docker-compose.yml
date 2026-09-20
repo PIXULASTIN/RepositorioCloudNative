@@ -1,0 +1,76 @@
+services:
+
+  # Un solo servidor de Postgres, con 2 bases de datos dentro
+  # (pedidos360 y catalogo360), gracias al init-db.sql
+  postgres:
+    image: postgres:16
+    container_name: pedidos360-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: pedidos360
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  pedidos-service:
+    build: ./backend/pedidos-service
+    container_name: pedidos-service
+    ports:
+      - "8081:8081"
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: pedidos360
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  catalogo-service:
+    build: ./backend/catalogo-service
+    container_name: catalogo-service
+    ports:
+      - "8082:8082"
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: catalogo360
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api-gateway:
+    build: ./api-gateway
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      # Dentro de la red de Docker, cada servicio se llama por su
+      # nombre de servicio (pedidos-service, catalogo-service), no localhost.
+      SERVICE_PEDIDOS_URL: http://pedidos-service:8081
+      SERVICE_CATALOGO_URL: http://catalogo-service:8082
+    depends_on:
+      - pedidos-service
+      - catalogo-service
+
+  frontend:
+    build: ./frontend
+    container_name: frontend
+    ports:
+      - "4200:80"
+    depends_on:
+      - api-gateway
+
+volumes:
+  pgdata:

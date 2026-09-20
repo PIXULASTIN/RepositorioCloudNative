@@ -1,0 +1,13 @@
+# Este archivo SOLO se usa cuando corren los tests (Maven lo prioriza
+# automaticamente sobre src/main/resources/application.yml durante "mvn test").
+# Asi los tests no necesitan que Postgres este corriendo.
+
+spring:
+  datasource:
+    url: jdbc:h2:mem:pedidos360test;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop

@@ -12,6 +12,6 @@ class CatalogoServiceApplicationTests {
 
     @Test
     void contextLoads() {
-    
+        // confirma que la app arranca sin errores de configuracion
     }
 }

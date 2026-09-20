@@ -7,5 +7,7 @@ import java.util.Optional;
 
 public interface ProductoRepository extends JpaRepository<Producto, Long> {
 
+    // Metodo personalizado: Spring Data lo implementa solo, basado en el nombre.
+    // Traduce automaticamente a: SELECT * FROM productos WHERE sku = ?
     Optional<Producto> findBySku(String sku);
 }
