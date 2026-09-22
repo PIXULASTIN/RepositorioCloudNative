@@ -5,11 +5,10 @@ spring:
   application:
     name: catalogo-service
 
-  # ---- Base de datos PostgreSQL ----
   datasource:
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:catalogo360}
     username: ${DB_USER:postgres}
-    password: ${DB_PASSWORD:navite123}
+    password: ${DB_PASSWORD:native123}
   jpa:
     hibernate:
       ddl-auto: update
