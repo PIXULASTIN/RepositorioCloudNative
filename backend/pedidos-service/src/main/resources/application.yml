@@ -18,11 +18,12 @@ spring:
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
-  # ---- Validacion de JWT contra Entra ID ----
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          # Reemplaza TU-TENANT-ID por el Tenant ID (Directory ID) de tu propio
-          # tenant de Azure AD / Entra ID (el que creaste con tu cuenta personal)
-          issuer-uri: https://login.microsoftonline.com/TU-TENANT-ID/v2.0
+security:
+  oauth2:
+    resourceserver:
+      jwt:
+        issuer-uri: https://login.microsoftonline.com/72e6a071-a2c0-48df-8b97-67eee4989d88/v2.0
+        
+service:
+  catalogo:
+    url: ${SERVICE_CATALOGO_URL:http://localhost:8082}

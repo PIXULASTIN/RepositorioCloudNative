@@ -19,23 +19,11 @@ import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 
-/**
- * El Gateway usa "WebFlux" (reactivo) en vez del Spring MVC clasico que usan
- * pedidos-service y catalogo-service, porque Spring Cloud Gateway esta
- * construido sobre esa base. Por eso las clases se llaman "Reactive..." y
- * "ServerHttpSecurity" en vez de "HttpSecurity".
- *
- * La idea es la misma que en los microservicios: validar issuer, audience,
- * firma y vigencia del JWT antes de dejar pasar la peticion.
- */
 @Configuration
 @EnableWebFluxSecurity
 public class GatewaySecurityConfig {
 
-    // Audience del propio Gateway. Puedes crear un App Registration especifico
-    // para el Gateway en Entra ID, o reutilizar el mismo audience de uno de
-    // los microservicios si el curso no pide uno separado.
-    private static final String EXPECTED_AUDIENCE = "api://CAMBIA-ESTO-POR-TU-CLIENT-ID-GATEWAY";
+    private static final String EXPECTED_AUDIENCE = "api://066465b6-fb1c-4ec7-885f-09f30d0d9272";
 
     private final String issuerUri;
 
@@ -51,15 +39,8 @@ public class GatewaySecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable())
             .authorizeExchange(exchange -> exchange
-                .pathMatchers("/actuator/health").permitAll()
-
-                // =====================================================================
-                // TEMPORAL: igual que en los microservicios, mientras se configura
-                // Entra ID. ANTES DE ENTREGAR, cambiar a .authenticated()
-                .pathMatchers("/api/**").permitAll()
-                // .pathMatchers("/api/**").authenticated()
-                // =====================================================================
-
+                .pathMatchers("/actuator/health", "/api/publico/**").permitAll()
+                .pathMatchers("/api/**").authenticated()
                 .anyExchange().denyAll()
             )
             .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtDecoder(jwtDecoder())));
