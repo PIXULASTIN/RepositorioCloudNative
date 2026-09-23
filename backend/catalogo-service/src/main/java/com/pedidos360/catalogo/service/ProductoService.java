@@ -28,15 +28,9 @@ public class ProductoService {
                 .orElseThrow(() -> new RuntimeException("Producto no encontrado: " + id));
     }
 
-    public Producto actualizar(Long id, Producto productoActualizado) {
-        Producto producto = obtener(id);
-        producto.setNombre(productoActualizado.getNombre());
-        producto.setSku(productoActualizado.getSku());
-        producto.setPrecio(productoActualizado.getPrecio());
-        producto.setStockDisponible(productoActualizado.getStockDisponible());
-        return productoRepository.save(producto);
-    }
-
+    // Ejemplo de regla de negocio simple: descontar stock al confirmar un pedido.
+    // Esto es un ejemplo de por que la logica de negocio va en el Service y no
+    // directo en el Controller ni en el Repository.
     public Producto descontarStock(Long id, int cantidad) {
         Producto producto = obtener(id);
         if (producto.getStockDisponible() < cantidad) {

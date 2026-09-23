@@ -1,4 +1,7 @@
 services:
+
+  # Un solo servidor de Postgres, con 2 bases de datos dentro
+  # (pedidos360 y catalogo360), gracias al init-db.sql
   postgres:
     image: postgres:16
     container_name: pedidos360-postgres
@@ -46,18 +49,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-
-  api-gateway:
-    build: ./api-gateway
-    container_name: api-gateway
-    ports:
-      - "8080:8080"
-    environment:
-      SERVICE_PEDIDOS_URL: http://pedidos-service:8081
-      SERVICE_CATALOGO_URL: http://catalogo-service:8082
-    depends_on:
-      - pedidos-service
-      - catalogo-service
 
   frontend:
     build: ./frontend
