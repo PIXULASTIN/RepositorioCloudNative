@@ -13,7 +13,7 @@ export interface Producto {
 
 @Injectable({ providedIn: 'root' })
 export class ProductosService {
-  private baseUrl = `${environment.apiBaseUrl}/productos`;
+  private baseUrl = `${environment.catalogoApiUrl}/productos`;
 
   constructor(private http: HttpClient) {}
 

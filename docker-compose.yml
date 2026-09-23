@@ -50,27 +50,14 @@ services:
       postgres:
         condition: service_healthy
 
-  api-gateway:
-    build: ./api-gateway
-    container_name: api-gateway
-    ports:
-      - "8080:8080"
-    environment:
-      # Dentro de la red de Docker, cada servicio se llama por su
-      # nombre de servicio (pedidos-service, catalogo-service), no localhost.
-      SERVICE_PEDIDOS_URL: http://pedidos-service:8081
-      SERVICE_CATALOGO_URL: http://catalogo-service:8082
-    depends_on:
-      - pedidos-service
-      - catalogo-service
-
   frontend:
     build: ./frontend
     container_name: frontend
     ports:
       - "4200:80"
     depends_on:
-      - api-gateway
+      - pedidos-service
+      - catalogo-service
 
 volumes:
   pgdata:

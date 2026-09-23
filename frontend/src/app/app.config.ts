@@ -47,7 +47,8 @@ function MSALGuardConfigFactory() {
 // 3) Config del Interceptor: adjunta el token SOLO a las llamadas hacia el Gateway
 function MSALInterceptorConfigFactory() {
   const protectedResourceMap = new Map<string, Array<string>>();
-  protectedResourceMap.set(environment.apiBaseUrl + '/*', environment.apiScopes);
+  protectedResourceMap.set(environment.pedidosApiUrl + '/*', environment.apiScopes);
+  protectedResourceMap.set(environment.catalogoApiUrl + '/*', environment.apiScopes);
 
   return {
     interactionType: InteractionType.Redirect,

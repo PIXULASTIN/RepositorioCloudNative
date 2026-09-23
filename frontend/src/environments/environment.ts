@@ -7,10 +7,11 @@ export const environment = {
     redirectUri: 'http://localhost:4200',
   },
 
-  // Scope del backend (cualquiera de los microservicios que hayas expuesto
-  // como API en Entra ID; si compartes audience entre servicios, uno basta)
   apiScopes: ['api://CAMBIA-ESTO-CLIENT-ID-BACKEND/access_as_user'],
 
-  // Todo el trafico va al API Gateway, nunca directo a un microservicio
-  apiBaseUrl: 'http://localhost:8080/api',
+  // Local / Docker Compose: cada microservicio en su propio puerto.
+  // Cuando despliegues en AWS, reemplaza esto por la URL del API Gateway
+  // real de AWS, que internamente redirige a cada microservicio en EC2.
+  pedidosApiUrl: 'http://localhost:8081/api',
+  catalogoApiUrl: 'http://localhost:8082/api',
 };

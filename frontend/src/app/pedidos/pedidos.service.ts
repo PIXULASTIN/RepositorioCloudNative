@@ -15,7 +15,7 @@ export class PedidosService {
   // Nota: pasa por el API Gateway (puerto 8080), que internamente
   // reenvia esto a pedidos-service. El frontend no sabe (ni le importa)
   // en que puerto/host esta corriendo cada microservicio.
-  private baseUrl = `${environment.apiBaseUrl}/pedidos`;
+  private baseUrl = `${environment.pedidosApiUrl}/pedidos`;
 
   constructor(private http: HttpClient) {}
 
