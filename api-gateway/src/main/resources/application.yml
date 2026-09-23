@@ -1,0 +1,32 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+
+security:
+  oauth2:
+    resourceserver:
+      jwt:
+        issuer-uri: https://login.microsoftonline.com/72e6a071-a2c0-48df-8b97-67eee4989d88/v2.0
+
+  cloud:
+    gateway:
+      routes:
+        # Cualquier peticion a /api/pedidos/** se reenvia a pedidos-service.
+        # ${SERVICE_PEDIDOS_URL:...} usa la variable de entorno si existe
+        # (para Docker), o localhost:8081 si corres todo suelto en tu compu.
+        - id: pedidos-service
+          uri: ${SERVICE_PEDIDOS_URL:http://localhost:8081}
+          predicates:
+            - Path=/api/pedidos/**
+
+        # Cualquier peticion a /api/productos/** se reenvia a catalogo-service.
+        - id: catalogo-service
+          uri: ${SERVICE_CATALOGO_URL:http://localhost:8082}
+          predicates:
+            - Path=/api/productos/**
+
+        # Cuando agregues mas microservicios (Parcial 2, 3), solo agregas
+        # un bloque como estos, sin tocar nada mas.
