@@ -28,6 +28,7 @@ services:
       DB_NAME: pedidos360
       DB_USER: postgres
       DB_PASSWORD: postgres
+      SERVICE_CATALOGO_URL: http://catalogo-service:8082
     depends_on:
       postgres:
         condition: service_healthy

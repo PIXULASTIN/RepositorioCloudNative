@@ -7,6 +7,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "pedidos")
@@ -23,11 +25,21 @@ public class Pedido {
     @Column(nullable = false)
     private String cliente;
 
+    // CREADO, ACEPTADO, EN_PREPARACION, DESPACHADO, ENTREGADO, CANCELADO
     @Column(nullable = false)
-    private String estado; // PENDIENTE, EN_PREPARACION, DESPACHADO, ENTREGADO, CANCELADO
+    private String estado;
 
     @Column(nullable = false)
     private LocalDateTime fechaCreacion;
+
+    // Email/UPN del usuario autenticado que creo el pedido (sale del JWT).
+    // Nullable a proposito: asi ddl-auto=update no falla si ya hay filas antiguas.
+    private String creadoPor;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "pedido_items", joinColumns = @JoinColumn(name = "pedido_id"))
+    @Builder.Default
+    private List<ItemPedido> items = new ArrayList<>();
 
     @PrePersist
     public void prePersist() {
@@ -35,7 +47,7 @@ public class Pedido {
             fechaCreacion = LocalDateTime.now();
         }
         if (estado == null) {
-            estado = "PENDIENTE";
+            estado = EstadoPedido.CREADO.name();
         }
     }
 }

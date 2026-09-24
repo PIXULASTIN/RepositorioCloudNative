@@ -5,6 +5,7 @@ import com.pedidos360.catalogo.repository.ProductoRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 
 @Service
 public class ProductoService {
@@ -25,7 +26,7 @@ public class ProductoService {
 
     public Producto obtener(Long id) {
         return productoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Producto no encontrado: " + id));
+                .orElseThrow(() -> new NoSuchElementException("Producto no encontrado: " + id));
     }
 
     public Producto actualizar(Long id, Producto productoActualizado) {

@@ -1,11 +1,15 @@
 import { Routes } from '@angular/router';
 import { MsalGuard } from '@azure/msal-angular';
-import { HomeComponent } from './home/home.component';
-import { PedidosListComponent } from './pedidos/pedidos-list.component';
-import { ProductosListComponent } from './productos/productos-list.component';
+import { LoginComponent } from './login/login.component';
+import { DashboardComponent } from './dashboard/dashboard.component';
+import { OrdersComponent } from './orders/orders.component';
+import { CatalogComponent } from './catalog/catalog.component';
 
 export const routes: Routes = [
-  { path: '', component: HomeComponent },
-  { path: 'pedidos', component: PedidosListComponent, canActivate: [MsalGuard] },
-  { path: 'productos', component: ProductosListComponent, canActivate: [MsalGuard] },
+  { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
+  { path: 'login', component: LoginComponent },
+  { path: 'dashboard', component: DashboardComponent, canActivate: [MsalGuard] },
+  { path: 'orders', component: OrdersComponent, canActivate: [MsalGuard] },
+  { path: 'catalog', component: CatalogComponent, canActivate: [MsalGuard] },
+  { path: '**', redirectTo: 'dashboard' },
 ];
