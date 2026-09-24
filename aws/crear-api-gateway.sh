@@ -50,6 +50,11 @@ I=$(integracion "$P/api/admin/{proxy}");      ruta 'ANY /api/admin/{proxy+}' "$I
 I=$(integracion "$P/api/publico/{proxy}");    ruta 'ANY /api/publico/{proxy+}' "$I" NONE
 I=$(integracion "$C/api/catalog/{proxy}");    ruta 'ANY /api/catalog/{proxy+}' "$I" JWT
 
+# Preflight CORS: las rutas OPTIONS no llevan authorizer (el navegador no envia token en el preflight)
+I=$(integracion "$P/api/publico/ping")
+for R in 'OPTIONS /api/orders' 'OPTIONS /api/orders/{proxy+}' 'OPTIONS /api/admin/{proxy+}' 'OPTIONS /api/catalog/{proxy+}'; do
+  ruta "$R" "$I" NONE
+done
 aws apigatewayv2 create-stage --region "$REGION" --api-id "$API_ID" --stage-name '$default' --auto-deploy >/dev/null
 
 URL=$(aws apigatewayv2 get-api --region "$REGION" --api-id "$API_ID" --query ApiEndpoint --output text)

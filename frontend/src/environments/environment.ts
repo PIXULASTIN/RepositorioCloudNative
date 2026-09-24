@@ -1,7 +1,4 @@
-// Pega aqui la URL de tu API Gateway (termina en /api). Ejemplo:
-//   'https://abc123xyz.execute-api.us-east-1.amazonaws.com/api'
-// Si la dejas vacia se usan los microservicios locales (docker compose / mvn spring-boot:run).
-const GATEWAY_URL = '';
+const GATEWAY_URL = 'https://70vjuankj1.execute-api.us-east-1.amazonaws.com/api';
 
 export const environment = {
   production: false,
