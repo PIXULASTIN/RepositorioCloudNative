@@ -19,8 +19,8 @@ spring:
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
-security:
-  oauth2:
-    resourceserver:
-      jwt:
-        issuer-uri: https://login.microsoftonline.com/72e6a071-a2c0-48df-8b97-67eee4989d88/v2.0
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: https://login.microsoftonline.com/72e6a071-a2c0-48df-8b97-67eee4989d88/v2.0
