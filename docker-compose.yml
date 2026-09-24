@@ -1,7 +1,4 @@
 services:
-
-  # Un solo servidor de Postgres, con 2 bases de datos dentro
-  # (pedidos360 y catalogo360), gracias al init-db.sql
   postgres:
     image: postgres:16
     container_name: pedidos360-postgres
