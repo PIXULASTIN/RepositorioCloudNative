@@ -1,0 +1,18 @@
+# Secretos / credenciales
+.env
+*.env
+*.pem
+*.key
+application-local.yml
+
+# Dependencias y compilados
+node_modules/
+target/
+dist/
+.angular/
+
+# IDEs / SO
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
