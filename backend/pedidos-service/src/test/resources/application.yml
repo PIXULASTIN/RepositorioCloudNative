@@ -1,7 +1,3 @@
-# Este archivo SOLO se usa cuando corren los tests (Maven lo prioriza
-# automaticamente sobre src/main/resources/application.yml durante "mvn test").
-# Asi los tests no necesitan que Postgres este corriendo.
-
 spring:
   datasource:
     url: jdbc:h2:mem:pedidos360test;DB_CLOSE_DELAY=-1
@@ -11,3 +7,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: create-drop
+  rabbitmq:
+    listener:
+      simple:
+        auto-startup: false   

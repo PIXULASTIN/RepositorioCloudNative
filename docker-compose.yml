@@ -17,12 +17,47 @@ services:
       timeout: 5s
       retries: 5
 
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: rabbitmq
+    hostname: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"     
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+      RABBITMQ_ERLANG_COOKIE: cookie-local-solo-desarrollo
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+
+  rabbit-init:
+    image: rabbitmq:3.13-management
+    container_name: rabbit-init
+    entrypoint: ["/bin/bash", "/init/init-cluster.sh"]
+    environment:
+      RABBIT_MAIN_NODE: rabbit@rabbitmq
+      RABBITMQ_ERLANG_COOKIE: cookie-local-solo-desarrollo
+    volumes:
+      - ./rabbitmq/init-cluster.sh:/init/init-cluster.sh:ro
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
   pedidos-service:
     build: ./backend/pedidos-service
     container_name: pedidos-service
     ports:
       - "8081:8081"
     environment:
+      RABBITMQ_ADDRESSES: rabbitmq:5672
+      RABBITMQ_USER: guest
+      RABBITMQ_PASSWORD: guest
       DB_HOST: postgres
       DB_PORT: 5432
       DB_NAME: pedidos360
@@ -31,6 +66,8 @@ services:
       SERVICE_CATALOGO_URL: http://catalogo-service:8082
     depends_on:
       postgres:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
 
   catalogo-service:
@@ -48,6 +85,19 @@ services:
       postgres:
         condition: service_healthy
 
+  rabbit-admin-service:
+    build: ./backend/rabbit-admin-service
+    container_name: rabbit-admin-service
+    ports:
+      - "8083:8083"
+    environment:
+      RABBITMQ_ADDRESSES: rabbitmq:5672
+      RABBITMQ_USER: guest
+      RABBITMQ_PASSWORD: guest
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
   frontend:
     build: ./frontend
     container_name: frontend
@@ -59,3 +109,4 @@ services:
 
 volumes:
   pgdata:
+  rabbitmq-data:

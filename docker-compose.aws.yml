@@ -1,7 +1,74 @@
-# Uso en la EC2:  docker compose -f docker-compose.aws.yml --env-file .env up -d --build
-# El archivo .env (NO se sube a GitHub) debe tener: DB_HOST, DB_USER, DB_PASSWORD
-# y, opcionalmente, CORS_ORIGINS. Ver README.md
 services:
+  rabbit1:
+    image: rabbitmq:3.13-management
+    container_name: rabbit1
+    hostname: rabbit1          
+    restart: unless-stopped
+    ports:
+      - "15672:15672"         
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:?definir RABBITMQ_USER en .env}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?definir RABBITMQ_PASSWORD en .env}
+      RABBITMQ_ERLANG_COOKIE: ${RABBITMQ_ERLANG_COOKIE:?definir RABBITMQ_ERLANG_COOKIE en .env}
+    volumes:
+      - rabbit1-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+
+  rabbit2:
+    image: rabbitmq:3.13-management
+    container_name: rabbit2
+    hostname: rabbit2          
+    restart: unless-stopped
+    ports:
+      - "15673:15672"          
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:?definir RABBITMQ_USER en .env}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?definir RABBITMQ_PASSWORD en .env}
+      RABBITMQ_ERLANG_COOKIE: ${RABBITMQ_ERLANG_COOKIE:?definir RABBITMQ_ERLANG_COOKIE en .env}
+    volumes:
+      - rabbit2-data:/var/lib/rabbitmq
+    depends_on:
+      rabbit1:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+
+  rabbit-init:
+    image: rabbitmq:3.13-management
+    container_name: rabbit-init
+    entrypoint: ["/bin/bash", "/init/init-cluster.sh"]
+    environment:
+      RABBIT_MAIN_NODE: rabbit@rabbit1
+      RABBIT_SECOND_NODE: rabbit@rabbit2
+      RABBITMQ_ERLANG_COOKIE: ${RABBITMQ_ERLANG_COOKIE:?definir RABBITMQ_ERLANG_COOKIE en .env}
+    volumes:
+      - ./rabbitmq/init-cluster.sh:/init/init-cluster.sh:ro
+    depends_on:
+      rabbit1:
+        condition: service_healthy
+      rabbit2:
+        condition: service_healthy
+  rabbit-admin-service:
+    build: ./backend/rabbit-admin-service
+    container_name: rabbit-admin-service
+    restart: unless-stopped
+    ports:
+      - "8083:8083"
+    environment:
+      RABBITMQ_ADDRESSES: rabbit1:5672,rabbit2:5672
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+    depends_on:
+      rabbit-init:
+        condition: service_completed_successfully
+
   pedidos-service:
     build: ./backend/pedidos-service
     container_name: pedidos-service
@@ -16,6 +83,12 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       SERVICE_CATALOGO_URL: http://catalogo-service:8082
       APP_CORS_ALLOWED_ORIGINS: ${CORS_ORIGINS:-http://localhost:4200}
+      RABBITMQ_ADDRESSES: rabbit1:5672,rabbit2:5672
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+    depends_on:
+      rabbit-init:
+        condition: service_completed_successfully
 
   catalogo-service:
     build: ./backend/catalogo-service
@@ -30,3 +103,7 @@ services:
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
       APP_CORS_ALLOWED_ORIGINS: ${CORS_ORIGINS:-http://localhost:4200}
+
+volumes:
+  rabbit1-data:
+  rabbit2-data:

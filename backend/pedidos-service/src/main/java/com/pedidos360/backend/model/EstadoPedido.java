@@ -1,10 +1,5 @@
 package com.pedidos360.backend.model;
 
-/**
- * Flujo de estados de un pedido:
- * CREADO -> ACEPTADO -> EN_PREPARACION -> DESPACHADO -> ENTREGADO
- *    \-> CANCELADO (solo desde CREADO, para no tener que reponer stock)
- */
 public enum EstadoPedido {
     CREADO, ACEPTADO, EN_PREPARACION, DESPACHADO, ENTREGADO, CANCELADO;
 

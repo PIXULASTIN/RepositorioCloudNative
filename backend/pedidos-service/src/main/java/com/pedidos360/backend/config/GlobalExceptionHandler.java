@@ -14,9 +14,6 @@ import java.util.NoSuchElementException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
-
-    // OJO: AccessDeniedException es un RuntimeException. Sin este handler especifico,
-    // un @PreAuthorize denegado terminaba como 400 (o 500) en vez de 403.
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<Map<String, Object>> handleAccessDenied(AccessDeniedException ex) {
         return build(HttpStatus.FORBIDDEN, "Acceso denegado", "No tienes permiso para esta operacion");

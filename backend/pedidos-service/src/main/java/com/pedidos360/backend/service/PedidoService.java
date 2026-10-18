@@ -2,6 +2,7 @@ package com.pedidos360.backend.service;
 
 import com.pedidos360.backend.client.CatalogoClient;
 import com.pedidos360.backend.dto.ProductoDto;
+import com.pedidos360.backend.messaging.producer.PedidoEventPublisher;
 import com.pedidos360.backend.model.EstadoPedido;
 import com.pedidos360.backend.model.ItemPedido;
 import com.pedidos360.backend.model.Pedido;
@@ -19,13 +20,15 @@ public class PedidoService {
 
     private final PedidoRepository pedidoRepository;
     private final CatalogoClient catalogoClient;
+    private final PedidoEventPublisher eventPublisher;
 
-    public PedidoService(PedidoRepository pedidoRepository, CatalogoClient catalogoClient) {
+    public PedidoService(PedidoRepository pedidoRepository, CatalogoClient catalogoClient,
+                        PedidoEventPublisher eventPublisher) {
         this.pedidoRepository = pedidoRepository;
         this.catalogoClient = catalogoClient;
+        this.eventPublisher = eventPublisher;
     }
 
-    /** ADMIN/OPERADOR ven todos; CLIENTE solo los que el mismo creo. */
     public List<Pedido> listar(String usuario, boolean veTodos) {
         return veTodos ? pedidoRepository.findAll() : pedidoRepository.findByCreadoPor(usuario);
     }
@@ -48,7 +51,6 @@ public class PedidoService {
             if (it.getProductoId() == null || it.getCantidad() == null || it.getCantidad() <= 0) {
                 throw new IllegalArgumentException("Cada item necesita productoId y cantidad mayor a 0");
             }
-            // Nombre y precio se toman del catalogo (no se confia en lo que manda el navegador)
             ProductoDto prod = catalogoClient.obtenerProducto(it.getProductoId());
             items.add(new ItemPedido(prod.id(), prod.nombre(), it.getCantidad(), prod.precio()));
         }
@@ -69,7 +71,6 @@ public class PedidoService {
         EstadoPedido actual = parsear(pedido.getEstado());
         EstadoPedido destino = parsear(estadoNuevo);
 
-        // Regla de negocio minima: no se despacha lo que no fue aceptado
         if (destino == EstadoPedido.DESPACHADO && actual == EstadoPedido.CREADO) {
             throw new IllegalStateException("No se puede DESPACHAR un pedido que no fue ACEPTADO");
         }
@@ -80,12 +81,11 @@ public class PedidoService {
             descontarStock(pedido);
         }
         pedido.setEstado(destino.name());
-        return pedidoRepository.save(pedido);
+        Pedido guardado = pedidoRepository.save(pedido);
+        eventPublisher.publicarCambioEstado(guardado);
+        return guardado;
     }
 
-    // Regla de negocio: al ACEPTAR un pedido baja el stock en el catalogo.
-    // Primero se valida todo y despues se descuenta, para no dejar descuentos a medias
-    // en el caso mas comun (falta de stock).
     private void descontarStock(Pedido pedido) {
         for (ItemPedido it : pedido.getItems()) {
             ProductoDto prod = catalogoClient.obtenerProducto(it.getProductoId());

@@ -27,3 +27,33 @@ spring:
   service:
     catalogo:
       url: ${SERVICE_CATALOGO_URL:http://localhost:8082}
+
+  # ---------- EP3: RabbitMQ ----------
+  rabbitmq:
+    # En cloud: RABBITMQ_ADDRESSES=rabbit1:5672,rabbit2:5672 (clúster de 2 nodos)
+    addresses: ${RABBITMQ_ADDRESSES:localhost:5672}
+    username: ${RABBITMQ_USER:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+    listener:
+      simple:
+        acknowledge-mode: manual        # el consumer hace ACK/NACK explicito
+        default-requeue-rejected: false # un rechazo va a la DLQ, no vuelve a la cola
+        prefetch: 10
+
+# Nombres de exchanges, colas y routing keys: UN solo lugar (IE3.1).
+# Los usan RabbitTopologyConfig (beans), el productor y los consumers.
+app:
+  rabbit:
+    exchanges:
+      direct: pedidos.direct
+      topic: pedidos.topic
+      dlx: pedidos.dlx
+    queues:
+      aceptados: pedidos.aceptados.queue
+      despachos: pedidos.despachos.queue
+      notificaciones: pedidos.notificaciones.queue
+    routing-keys:
+      aceptado: pedido.aceptado
+      despachado: pedido.despachado
+      notificaciones: pedido.*       # binding del topic exchange
+    dlq-suffix: .dlq

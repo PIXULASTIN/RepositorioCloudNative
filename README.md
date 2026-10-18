@@ -35,11 +35,17 @@ Amazon RDS PostgreSQL  (bases: pedidos360 y catalogo360)
 
 ```
 ├── backend/
-│   ├── pedidos-service/     # Pedidos y estados (puerto 8081)
-│   └── catalogo-service/    # Productos, precios y stock (puerto 8082)
+│   ├── pedidos-service/     # Pedidos y estados (puerto 8081) + producer/consumers RabbitMQ
+│   ├── catalogo-service/    # Productos, precios y stock (puerto 8082)
+│   └── rabbit-admin-service/# Administrador REST de RabbitMQ (puerto 8083)  [EP3]
 ├── frontend/                # Angular + MSAL
 ├── aws/
 │   └── crear-api-gateway.sh # Crea el API Gateway (JWT + CORS + rutas)
+├── rabbitmq/
+│   └── init-cluster.sh      # Une el 2.º nodo al clúster y aplica policies TTL/max-length  [EP3/EP4]
+├── docs/
+│   └── EP3_EP4_RabbitMQ.md  # Guía de RabbitMQ: topología, pruebas, despliegue y evidencias
+├── .env.example            # Variables que debe tener el .env de la EC2 (sin valores reales)
 ├── docker-compose.yml       # Ejecución local (incluye Postgres)
 ├── docker-compose.aws.yml   # Despliegue en EC2 (usa RDS)
 └── init-db.sql              # Crea la base catalogo360 en el Postgres local
@@ -85,6 +91,10 @@ Todos van bajo `/api`. Solo `/api/publico/**` no requiere token.
 | POST | `/api/catalog/products` | Admin |
 | PUT | `/api/catalog/products/{id}` | Admin |
 | GET | `/api/admin/dashboard` | Admin |
+| POST | `/api/admin/mensajeria/prueba` | Admin (mensaje de prueba a RabbitMQ) |
+| POST / GET / DELETE | `/api/rabbit/queues`, `/api/rabbit/queues/{name}` | Admin |
+| POST / DELETE | `/api/rabbit/exchanges`, `/api/rabbit/exchanges/{name}` | Admin |
+| POST / DELETE | `/api/rabbit/bindings` | Admin |
 | GET | `/api/publico/ping` | Público |
 
 Los roles se leen del claim `roles` del token de Entra ID y se convierten a `ROLE_ADMIN`, `ROLE_OPERADOR` y `ROLE_CLIENTE`.
@@ -128,6 +138,8 @@ docker compose up -d --build
 | Angular | http://localhost:4200 |
 | pedidos-service | http://localhost:8081 |
 | catalogo-service | http://localhost:8082 |
+| rabbit-admin-service | http://localhost:8083 |
+| RabbitMQ Management UI | http://localhost:15672 (guest / guest) |
 | PostgreSQL | localhost:5432 |
 
 Para correr un servicio con Maven en Windows (PowerShell):
@@ -143,7 +155,7 @@ Copy-Item env-windows.example.ps1 env-windows.ps1   # y editar la contraseña lo
 Región: `us-east-1`.
 
 1. **Security Groups**
-   - `dsy1107-ec2-sg`: SSH (22) solo desde tu IP; TCP 8081 y 8082 abiertos para el API Gateway.
+   - `dsy1107-ec2-sg`: SSH (22) solo desde tu IP; TCP 8081, 8082 y 8083 abiertos para el API Gateway; 15672/15673 (Management UI de RabbitMQ) solo desde tu IP.
    - `dsy1107-rds-sg`: PostgreSQL (5432) con origen `dsy1107-ec2-sg`.
 2. **RDS PostgreSQL** (sin acceso público) con base inicial `pedidos360`. Luego crear la segunda base:
    ```bash
@@ -158,11 +170,32 @@ Región: `us-east-1`.
    DB_USER=postgres
    DB_PASSWORD=<password>
    CORS_ORIGINS=http://localhost:4200
+   RABBITMQ_USER=<usuario>
+   RABBITMQ_PASSWORD=<password>
+   RABBITMQ_ERLANG_COOKIE=<cadena-aleatoria-larga>
    EOF
    docker compose -f docker-compose.aws.yml --env-file .env up -d --build
    ```
 5. **API Gateway**: editar `EC2_HOST` en `aws/crear-api-gateway.sh` y ejecutarlo en AWS CloudShell. Al final imprime la URL del Gateway.
 6. **Frontend**: pegar esa URL en `GATEWAY_URL` de `frontend/src/environments/environment.ts` (termina en `/api`).
+
+## Mensajería asíncrona con RabbitMQ (EP3 + EP4)
+
+Al aceptar o despachar un pedido, `pedidos-service` publica un evento en RabbitMQ (después del commit). Los consumers lo procesan con ACK/NACK explícito y los mensajes que fallan van a una DLQ.
+
+```
+PedidoService → PedidoEventPublisher
+   ├─ pedidos.topic  (topic)  --pedido.*--------------> pedidos.notificaciones.queue --(falla)--> .dlq
+   └─ pedidos.direct (direct) --pedido.aceptado-------> pedidos.aceptados.queue      --(falla)--> .dlq
+                              --pedido.despachado-----> pedidos.despachos.queue      --(falla)--> .dlq
+```
+
+- **Configuración centralizada:** `app.rabbit.*` en `application.yml` + `RabbitTopologyConfig` (beans `Queue`, `Exchange`, `Binding`), separada de la lógica de negocio.
+- **Consumers** (`@RabbitListener`) agrupados por dominio: `PedidoConsumer` y `NotificacionConsumer`.
+- **Administrador:** `rabbit-admin-service` (`/api/rabbit/...`, rol Admin) con `RabbitAdminService` y validación de parámetros.
+- **Clúster cloud:** `docker-compose.aws.yml` levanta `rabbit1` + `rabbit2`; `rabbit-init` los une y aplica las policies de TTL / max-length.
+
+Pruebas, despliegue del clúster y checklist de evidencias: [`docs/EP3_EP4_RabbitMQ.md`](docs/EP3_EP4_RabbitMQ.md).
 
 ## Pruebas de seguridad (200 / 401 / 403)
 
@@ -193,4 +226,4 @@ curl -i -H "Authorization: Bearer <TOKEN>" https://<ID>.execute-api.us-east-1.am
 
 - Los puertos 8081 y 8082 de la EC2 están abiertos a internet porque el API Gateway HTTP API no tiene IP fija; Spring Security valida el JWT igualmente. En producción se usaría una integración privada (VPC Link).
 - El frontend se ejecuta en `localhost:4200`; no está desplegado en la nube.
-- Notificaciones (RabbitMQ), reportería y auditoría (Kafka) se incorporan en evaluaciones posteriores.
+- Reportería y auditoría (Kafka) se incorporan en la etapa siguiente; Kafka no forma parte de EP3 + EP4.

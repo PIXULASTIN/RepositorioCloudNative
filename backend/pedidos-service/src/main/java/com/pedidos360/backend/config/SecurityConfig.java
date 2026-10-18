@@ -29,8 +29,6 @@ import java.util.stream.Collectors;
 @EnableMethodSecurity
 public class SecurityConfig {
 
-    // Client ID del App Registration. Segun la version del token de Entra ID (v1 o v2),
-    // el claim "aud" llega como "api://<id>" o como "<id>": se aceptan ambos.
     private static final String CLIENT_ID = "066465b6-fb1c-4ec7-885f-09f30d0d9272";
 
     private final String issuerUri;
@@ -67,8 +65,6 @@ public class SecurityConfig {
         return http.build();
     }
 
-    // El claim "roles" del token trae los App Roles de Entra (ej: "Admin", "Operador", "Cliente").
-    // Se convierten a ROLE_ADMIN, ROLE_OPERADOR, ROLE_CLIENTE (en mayusculas).
     @Bean
     public JwtAuthenticationConverter jwtAuthenticationConverter() {
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter();

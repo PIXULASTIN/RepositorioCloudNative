@@ -9,10 +9,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
-/**
- * Llama a catalogo-service reenviando el mismo JWT del usuario que hizo la
- * peticion (ambos servicios validan el mismo token de Entra ID).
- */
 @Component
 public class CatalogoClient {
 

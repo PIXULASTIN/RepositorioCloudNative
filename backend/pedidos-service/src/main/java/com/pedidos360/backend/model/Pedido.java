@@ -25,15 +25,12 @@ public class Pedido {
     @Column(nullable = false)
     private String cliente;
 
-    // CREADO, ACEPTADO, EN_PREPARACION, DESPACHADO, ENTREGADO, CANCELADO
     @Column(nullable = false)
     private String estado;
 
     @Column(nullable = false)
     private LocalDateTime fechaCreacion;
 
-    // Email/UPN del usuario autenticado que creo el pedido (sale del JWT).
-    // Nullable a proposito: asi ddl-auto=update no falla si ya hay filas antiguas.
     private String creadoPor;
 
     @ElementCollection(fetch = FetchType.EAGER)

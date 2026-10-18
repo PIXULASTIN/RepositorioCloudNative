@@ -5,7 +5,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/** Linea de un pedido. Nombre y precio se copian del catalogo al crear el pedido. */
 @Embeddable
 @Data
 @NoArgsConstructor

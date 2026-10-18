@@ -35,7 +35,6 @@ public class PedidoController {
 
     @PostMapping
     public ResponseEntity<Pedido> crear(@RequestBody Pedido pedido, @AuthenticationPrincipal Jwt jwt, Authentication auth) {
-        // Un CLIENTE siempre compra a su nombre; ADMIN/OPERADOR pueden indicar el cliente.
         String cliente = (esStaff(auth) && pedido.getCliente() != null && !pedido.getCliente().isBlank())
                 ? pedido.getCliente()
                 : nombre(jwt);
@@ -44,11 +43,9 @@ public class PedidoController {
 
     @PutMapping("/{id}/status")
     public ResponseEntity<Pedido> cambiarEstado(@PathVariable Long id, @RequestBody CambioEstado body) {
-        // El acceso (OPERADOR/ADMIN) se controla en SecurityConfig
         return ResponseEntity.ok(pedidoService.cambiarEstado(id, body.estado()));
     }
 
-    // ---- helpers ----
 
     private boolean esStaff(Authentication auth) {
         return auth.getAuthorities().stream()
