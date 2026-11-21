@@ -2,6 +2,7 @@ package com.pedidos360.backend.service;
 
 import com.pedidos360.backend.client.CatalogoClient;
 import com.pedidos360.backend.dto.ProductoDto;
+import com.pedidos360.backend.messaging.kafka.producer.PedidoKafkaPublisher;
 import com.pedidos360.backend.messaging.producer.PedidoEventPublisher;
 import com.pedidos360.backend.model.ItemPedido;
 import com.pedidos360.backend.model.Pedido;
@@ -33,6 +34,9 @@ class PedidoServiceTest {
 
     @Mock
     private PedidoEventPublisher eventPublisher;
+
+    @Mock
+    private PedidoKafkaPublisher kafkaPublisher;
 
     @InjectMocks
     private PedidoService pedidoService;
@@ -112,6 +116,7 @@ class PedidoServiceTest {
         assertEquals("ACEPTADO", resultado.getEstado());
         verify(catalogoClient).descontarStock(1L, 2);
         verify(eventPublisher).publicarCambioEstado(resultado);   // EP3: evento a RabbitMQ
+        verify(kafkaPublisher).publicarCambioEstado(resultado, "CREADO");   // EP5: evento a Kafka
     }
 
     @Test

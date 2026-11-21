@@ -2,6 +2,7 @@ package com.pedidos360.backend.service;
 
 import com.pedidos360.backend.client.CatalogoClient;
 import com.pedidos360.backend.dto.ProductoDto;
+import com.pedidos360.backend.messaging.kafka.producer.PedidoKafkaPublisher;
 import com.pedidos360.backend.messaging.producer.PedidoEventPublisher;
 import com.pedidos360.backend.model.EstadoPedido;
 import com.pedidos360.backend.model.ItemPedido;
@@ -21,12 +22,14 @@ public class PedidoService {
     private final PedidoRepository pedidoRepository;
     private final CatalogoClient catalogoClient;
     private final PedidoEventPublisher eventPublisher;
+    private final PedidoKafkaPublisher kafkaPublisher;   // EP5: eventos a Kafka
 
     public PedidoService(PedidoRepository pedidoRepository, CatalogoClient catalogoClient,
-                        PedidoEventPublisher eventPublisher) {
+                        PedidoEventPublisher eventPublisher, PedidoKafkaPublisher kafkaPublisher) {
         this.pedidoRepository = pedidoRepository;
         this.catalogoClient = catalogoClient;
         this.eventPublisher = eventPublisher;
+        this.kafkaPublisher = kafkaPublisher;
     }
 
     public List<Pedido> listar(String usuario, boolean veTodos) {
@@ -82,7 +85,8 @@ public class PedidoService {
         }
         pedido.setEstado(destino.name());
         Pedido guardado = pedidoRepository.save(pedido);
-        eventPublisher.publicarCambioEstado(guardado);
+        eventPublisher.publicarCambioEstado(guardado);                 // EP3: RabbitMQ
+        kafkaPublisher.publicarCambioEstado(guardado, actual.name());  // EP5: Kafka
         return guardado;
     }
 

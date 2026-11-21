@@ -10,4 +10,32 @@ spring:
   rabbitmq:
     listener:
       simple:
-        auto-startup: false   
+        auto-startup: false
+
+# EP5: en tests no se conecta a Kafka (no crea topicos al arrancar)
+app:
+  kafka:
+    bootstrap-servers: localhost:9092
+    create-topics: false
+    topics:
+      pedidos:
+        name: pedidos.eventos
+        partitions: 3
+        replicas: 3
+        retention-ms: 604800000
+        cleanup-policy: delete
+        min-insync-replicas: 2
+      stock:
+        name: catalogo.stock
+        partitions: 3
+        replicas: 3
+        retention-ms: 0
+        cleanup-policy: compact
+        min-insync-replicas: 2
+    producer:
+      acks: all
+      retries: 3
+      enable-idempotence: true
+      linger-ms: 5
+      request-timeout-ms: 15000
+      delivery-timeout-ms: 30000
