@@ -39,6 +39,27 @@ public class KafkaTopicConfig {
         return construir(props.topics().stock());
     }
 
+    /** Topicos de errores (Dead Letter Topic): mismas particiones para conservar la particion de origen. */
+    @Bean
+    public NewTopic pedidosEventosDltTopic(KafkaAppProperties props) {
+        return construirDlt(props.topics().pedidos());
+    }
+
+    @Bean
+    public NewTopic catalogoStockDltTopic(KafkaAppProperties props) {
+        return construirDlt(props.topics().stock());
+    }
+
+    private NewTopic construirDlt(KafkaAppProperties.Topic t) {
+        return TopicBuilder.name(t.name() + ".DLT")
+                .partitions(t.partitions())
+                .replicas(t.replicas())
+                .config(TopicConfig.CLEANUP_POLICY_CONFIG, "delete")
+                .config(TopicConfig.RETENTION_MS_CONFIG, "2592000000")   // 30 dias
+                .config(TopicConfig.MIN_IN_SYNC_REPLICAS_CONFIG, String.valueOf(t.minInsyncReplicas()))
+                .build();
+    }
+
     private NewTopic construir(KafkaAppProperties.Topic t) {
         TopicBuilder builder = TopicBuilder.name(t.name())
                 .partitions(t.partitions())

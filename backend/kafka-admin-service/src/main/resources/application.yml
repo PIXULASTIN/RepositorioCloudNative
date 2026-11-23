@@ -1,0 +1,20 @@
+server:
+  port: 8084
+
+spring:
+  application:
+    name: kafka-admin-service
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: https://login.microsoftonline.com/72e6a071-a2c0-48df-8b97-67eee4989d88/v2.0
+
+# ---------- EP5: administrador de Kafka ----------
+app:
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092,localhost:9093,localhost:9094}
+    operation-timeout-seconds: 15
+    # Topicos que NO se pueden eliminar desde la API (evita borrados accidentales en la demo)
+    protected-topics: pedidos.eventos,catalogo.stock,pedidos.eventos.DLT,catalogo.stock.DLT

@@ -24,3 +24,25 @@ spring:
       resourceserver:
         jwt:
           issuer-uri: https://login.microsoftonline.com/72e6a071-a2c0-48df-8b97-67eee4989d88/v2.0
+
+# ---------- EP5: Apache Kafka ----------
+app:
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092,localhost:9093,localhost:9094}
+    create-topics: ${KAFKA_CREATE_TOPICS:true}
+    topics:
+      stock:
+        name: catalogo.stock
+        partitions: 3
+        replicas: 3
+        retention-ms: 0               # 0 = no se define (compact conserva el ultimo valor por key)
+        cleanup-policy: compact
+        min-insync-replicas: 2
+    producer:
+      acks: all
+      retries: 3
+      enable-idempotence: true
+      linger-ms: 5
+      request-timeout-ms: 15000
+      delivery-timeout-ms: 30000
+      max-block-ms: 3000              # si Kafka no responde, send() falla rapido

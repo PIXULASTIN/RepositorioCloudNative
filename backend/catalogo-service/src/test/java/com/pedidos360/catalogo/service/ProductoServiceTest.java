@@ -1,5 +1,6 @@
 package com.pedidos360.catalogo.service;
 
+import com.pedidos360.catalogo.messaging.kafka.producer.StockKafkaPublisher;
 import com.pedidos360.catalogo.model.Producto;
 import com.pedidos360.catalogo.repository.ProductoRepository;
 import org.junit.jupiter.api.Test;
@@ -13,13 +14,21 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
 
 @ExtendWith(MockitoExtension.class)
 class ProductoServiceTest {
 
     @Mock
     private ProductoRepository productoRepository;
+
+    @Mock
+    private StockKafkaPublisher kafkaPublisher;
 
     @InjectMocks
     private ProductoService productoService;
@@ -43,6 +52,7 @@ class ProductoServiceTest {
         Producto resultado = productoService.descontarStock(1L, 2);
 
         assertEquals(3, resultado.getStockDisponible());
+        verify(kafkaPublisher).publicarCambioStock(resultado, 5, "DESCUENTO_PEDIDO");   // EP5: evento a Kafka
     }
 
     @Test
@@ -51,5 +61,6 @@ class ProductoServiceTest {
         when(productoRepository.findById(1L)).thenReturn(Optional.of(producto));
 
         assertThrows(IllegalStateException.class, () -> productoService.descontarStock(1L, 5));
+        verify(kafkaPublisher, never()).publicarCambioStock(any(), any(), anyString());   // sin cambio no hay evento
     }
 }

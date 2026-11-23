@@ -8,7 +8,8 @@ public record KafkaAppProperties(
         String bootstrapServers,
         boolean createTopics,
         Topics topics,
-        Producer producer) {
+        Producer producer,
+        Consumer consumer) {
 
     public record Topics(Topic pedidos, Topic stock) {
     }
@@ -28,6 +29,26 @@ public record KafkaAppProperties(
             boolean enableIdempotence,
             int lingerMs,
             int requestTimeoutMs,
-            int deliveryTimeoutMs) {
+            int deliveryTimeoutMs,
+            int maxBlockMs) {
+    }
+
+    public record Consumer(
+            boolean autoStartup,
+            String autoOffsetReset,
+            int concurrency,
+            int maxPollRecords,
+            Groups groups,
+            Retry retry) {
+    }
+
+    public record Groups(String pedidosStock) {
+    }
+
+    public record Retry(
+            long initialIntervalMs,
+            double multiplier,
+            long maxIntervalMs,
+            int maxRetries) {
     }
 }

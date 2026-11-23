@@ -1,0 +1,70 @@
+# Cluster RabbitMQ de 2 nodos (rabbit1 + rabbit2) con policies de retencion (EP3/EP4).
+# Uso (desde la raiz del repo, con el .env que define RABBITMQ_USER, RABBITMQ_PASSWORD y RABBITMQ_ERLANG_COOKIE):
+#   docker compose -f infraestructura/docker-compose-rabbitmq.yml --env-file .env up -d
+# Nota: usa los mismos nombres de contenedor que docker-compose.aws.yml; levanta uno u otro, no ambos.
+# Management UI: http://localhost:15672 (rabbit1) y http://localhost:15673 (rabbit2)
+
+services:
+  rabbit1:
+    image: rabbitmq:3.13-management
+    container_name: rabbit1
+    hostname: rabbit1
+    restart: unless-stopped
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:?definir RABBITMQ_USER en .env}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?definir RABBITMQ_PASSWORD en .env}
+      RABBITMQ_ERLANG_COOKIE: ${RABBITMQ_ERLANG_COOKIE:?definir RABBITMQ_ERLANG_COOKIE en .env}
+    volumes:
+      - rabbit1-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+
+  rabbit2:
+    image: rabbitmq:3.13-management
+    container_name: rabbit2
+    hostname: rabbit2
+    restart: unless-stopped
+    ports:
+      - "5673:5672"
+      - "15673:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:?definir RABBITMQ_USER en .env}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?definir RABBITMQ_PASSWORD en .env}
+      RABBITMQ_ERLANG_COOKIE: ${RABBITMQ_ERLANG_COOKIE:?definir RABBITMQ_ERLANG_COOKIE en .env}
+    volumes:
+      - rabbit2-data:/var/lib/rabbitmq
+    depends_on:
+      rabbit1:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+
+  # Une rabbit2 al cluster y aplica las policies de TTL / max-length. Corre una vez y termina.
+  rabbit-init:
+    image: rabbitmq:3.13-management
+    container_name: rabbit-init
+    entrypoint: ["/bin/bash", "/init/init-cluster.sh"]
+    environment:
+      RABBIT_MAIN_NODE: rabbit@rabbit1
+      RABBIT_SECOND_NODE: rabbit@rabbit2
+      RABBITMQ_ERLANG_COOKIE: ${RABBITMQ_ERLANG_COOKIE:?definir RABBITMQ_ERLANG_COOKIE en .env}
+    volumes:
+      - ../rabbitmq/init-cluster.sh:/init/init-cluster.sh:ro
+    depends_on:
+      rabbit1:
+        condition: service_healthy
+      rabbit2:
+        condition: service_healthy
+
+volumes:
+  rabbit1-data:
+  rabbit2-data:

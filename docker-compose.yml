@@ -64,6 +64,9 @@ services:
       DB_USER: postgres
       DB_PASSWORD: postgres
       SERVICE_CATALOGO_URL: http://catalogo-service:8082
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-kafka1:29092,kafka2:29093,kafka3:29094}
+      KAFKA_CREATE_TOPICS: "false"          # los topicos los crea infraestructura/docker-compose-kafka.yml
+    networks: [default, pedidos360-net]
     depends_on:
       postgres:
         condition: service_healthy
@@ -81,6 +84,9 @@ services:
       DB_NAME: catalogo360
       DB_USER: postgres
       DB_PASSWORD: postgres
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-kafka1:29092,kafka2:29093,kafka3:29094}
+      KAFKA_CREATE_TOPICS: "false"
+    networks: [default, pedidos360-net]
     depends_on:
       postgres:
         condition: service_healthy
@@ -98,6 +104,25 @@ services:
       rabbitmq:
         condition: service_healthy
 
+  # ---------- EP5: Kafka ----------
+  kafka-admin-service:
+    build: ./backend/kafka-admin-service
+    container_name: kafka-admin-service
+    ports:
+      - "8084:8084"
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-kafka1:29092,kafka2:29093,kafka3:29094}
+    networks: [default, pedidos360-net]
+
+  reporteria-service:
+    build: ./backend/reporteria-service
+    container_name: reporteria-service
+    ports:
+      - "8085:8085"
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-kafka1:29092,kafka2:29093,kafka3:29094}
+    networks: [default, pedidos360-net]
+
   frontend:
     build: ./frontend
     container_name: frontend
@@ -106,6 +131,12 @@ services:
     depends_on:
       - pedidos-service
       - catalogo-service
+
+# Red compartida con el cluster Kafka (infraestructura/docker-compose-kafka.yml).
+# Crearla una sola vez:  docker network create pedidos360-net
+networks:
+  pedidos360-net:
+    external: true
 
 volumes:
   pgdata:

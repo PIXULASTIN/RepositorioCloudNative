@@ -39,3 +39,18 @@ app:
       linger-ms: 5
       request-timeout-ms: 15000
       delivery-timeout-ms: 30000
+      max-block-ms: 3000
+    consumer:
+      auto-startup: false
+      auto-offset-reset: earliest
+      concurrency: 1
+      max-poll-records: 100
+      groups:
+        pedidos-stock: pedidos-stock
+      retry:
+        initial-interval-ms: 100
+        multiplier: 2.0
+        max-interval-ms: 500
+        max-retries: 2
+  stock:
+    umbral-bajo: 5

@@ -1,0 +1,38 @@
+server:
+  port: 8085
+
+spring:
+  application:
+    name: reporteria-service
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: https://login.microsoftonline.com/72e6a071-a2c0-48df-8b97-67eee4989d88/v2.0
+
+app:
+  stock:
+    umbral-bajo: 5                      # stock <= umbral se muestra en alertas
+
+  # ---------- EP5: Apache Kafka (solo consumidor) ----------
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092,localhost:9093,localhost:9094}
+    topics:
+      pedidos: pedidos.eventos
+      stock: catalogo.stock
+    consumer:
+      auto-startup: ${KAFKA_CONSUMER_AUTO_STARTUP:true}
+      auto-offset-reset: earliest
+      max-poll-records: 100
+      groups:
+        pedidos: reporteria-pedidos     # 3 hilos = 3 particiones de pedidos.eventos
+        stock: reporteria-stock
+      concurrency:
+        pedidos: 3
+        stock: 1
+      retry:                            # reintentos con backoff exponencial antes de enviar a la DLT
+        initial-interval-ms: 1000
+        multiplier: 2.0
+        max-interval-ms: 5000
+        max-retries: 3

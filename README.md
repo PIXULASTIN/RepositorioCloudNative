@@ -37,12 +37,19 @@ Amazon RDS PostgreSQL  (bases: pedidos360 y catalogo360)
 ├── backend/
 │   ├── pedidos-service/     # Pedidos y estados (puerto 8081) + producer/consumers RabbitMQ
 │   ├── catalogo-service/    # Productos, precios y stock (puerto 8082)
-│   └── rabbit-admin-service/# Administrador REST de RabbitMQ (puerto 8083)  [EP3]
+│   ├── rabbit-admin-service/# Administrador REST de RabbitMQ (puerto 8083)  [EP3]
+│   ├── kafka-admin-service/ # Administrador REST de Kafka: tópicos, configs, grupos y lag (puerto 8084)  [EP5]
+│   └── reporteria-service/  # Consumidor Kafka: reportería en tiempo real (puerto 8085)  [EP5]
 ├── frontend/                # Angular + MSAL
 ├── aws/
 │   └── crear-api-gateway.sh # Crea el API Gateway (JWT + CORS + rutas)
 ├── rabbitmq/
 │   └── init-cluster.sh      # Une el 2.º nodo al clúster y aplica policies TTL/max-length  [EP3/EP4]
+├── infraestructura/         # [EP5/EP6]
+│   ├── docker-compose-kafka.yml      # 3 ZooKeeper + 3 brokers + creación de tópicos
+│   ├── docker-compose-kafka-ui.yml   # Kafka UI (http://localhost:8090)
+│   ├── docker-compose-rabbitmq.yml   # Clúster RabbitMQ de 2 nodos
+│   └── scripts/                      # crear-topicos.sh, describir-topicos.sh, describir-grupos.sh
 ├── docs/
 │   └── EP3_EP4_RabbitMQ.md  # Guía de RabbitMQ: topología, pruebas, despliegue y evidencias
 ├── .env.example            # Variables que debe tener el .env de la EC2 (sin valores reales)
@@ -197,6 +204,58 @@ PedidoService → PedidoEventPublisher
 
 Pruebas, despliegue del clúster y checklist de evidencias: [`docs/EP3_EP4_RabbitMQ.md`](docs/EP3_EP4_RabbitMQ.md).
 
+## Streaming de eventos con Apache Kafka (EP5 + EP6)
+
+Kafka **complementa** a RabbitMQ y no lo reemplaza: RabbitMQ sigue encargándose de las colas de trabajo (aceptados, despachos, notificaciones con DLQ) y Kafka transporta el flujo de eventos de pedidos y stock para reportería en tiempo real.
+
+### Arquitectura
+
+| Servicio | Puerto | Rol con Kafka |
+|---|---|---|
+| `pedidos-service` | 8081 | Productor en `pedidos.eventos`. Consumidor de `catalogo.stock` (grupo `pedidos-stock`): alerta de stock bajo. |
+| `catalogo-service` | 8082 | Productor en `catalogo.stock` cuando cambia el stock de un producto. |
+| `reporteria-service` | 8085 | Consumidor de `pedidos.eventos` (grupo `reporteria-pedidos`, 3 hilos) y de `catalogo.stock` (grupo `reporteria-stock`). `GET /api/reportes/resumen`. |
+| `kafka-admin-service` | 8084 | Administra tópicos, configuraciones, consumer groups y lag con `AdminClient` (rol ADMIN). |
+
+| Tópico | Key | Particiones / réplicas | Configuración |
+|---|---|---|---|
+| `pedidos.eventos` | `pedidoId` | 3 / 3 | `retention.ms` 7 días, `cleanup.policy=delete`, `min.insync.replicas=2` |
+| `catalogo.stock` | `productoId` | 3 / 3 | `cleanup.policy=compact`, `min.insync.replicas=2` |
+| `*.DLT` | — | 3 / 3 | Mensajes con error, retención 30 días |
+
+Manejo de errores en los consumidores: `ErrorHandlingDeserializer` (un mensaje corrupto no detiene al consumidor), validación del evento, reintentos con backoff exponencial y envío a `<tópico>.DLT`. Si Kafka falla al publicar, se registra en el log y no afecta al pedido ni a RabbitMQ.
+
+### Levantar Kafka
+
+```bash
+docker network create pedidos360-net          # una sola vez
+docker compose -f infraestructura/docker-compose-kafka.yml up -d
+docker compose -f infraestructura/docker-compose-kafka-ui.yml up -d     # http://localhost:8090
+docker logs kafka-init                         # crea los 2 tópicos + los 2 .DLT
+```
+
+Servicios en Docker (usan la red `pedidos360-net`): `docker compose up -d --build`. Servicios desde el IDE: usan por defecto `localhost:9092,9093,9094` (variable `KAFKA_BOOTSTRAP_SERVERS`).
+
+### Pruebas rápidas
+
+```bash
+# Publicar un evento de prueba (rol ADMIN)
+curl -X POST http://localhost:8081/api/admin/kafka/prueba -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" -d '{"pedidoId":1,"estado":"ACEPTADO"}'
+
+# Reporte construido desde Kafka
+curl http://localhost:8085/api/reportes/resumen -H "Authorization: Bearer $TOKEN"
+
+# Administración (rol ADMIN)
+curl http://localhost:8084/api/kafka/topics -H "Authorization: Bearer $TOKEN"
+curl http://localhost:8084/api/kafka/consumer-groups/reporteria-pedidos/lag -H "Authorization: Bearer $TOKEN"
+
+# Mensaje inválido directo al tópico: va a pedidos.eventos.DLT y el consumidor sigue funcionando
+echo "no-es-json" | docker exec -i kafka1 kafka-console-producer --bootstrap-server kafka1:29092 --topic pedidos.eventos
+```
+
+Endpoints de `kafka-admin-service`: `GET /api/kafka/cluster`, `GET|POST /api/kafka/topics`, `GET|DELETE /api/kafka/topics/{name}`, `PUT /api/kafka/topics/{name}/config`, `PUT /api/kafka/topics/{name}/partitions`, `GET /api/kafka/consumer-groups`, `GET|DELETE /api/kafka/consumer-groups/{id}`, `GET /api/kafka/consumer-groups/{id}/lag`. Los tópicos funcionales y los `.DLT` están protegidos contra eliminación.
+
 ## Pruebas de seguridad (200 / 401 / 403)
 
 | Escenario | Resultado |
@@ -226,4 +285,6 @@ curl -i -H "Authorization: Bearer <TOKEN>" https://<ID>.execute-api.us-east-1.am
 
 - Los puertos 8081 y 8082 de la EC2 están abiertos a internet porque el API Gateway HTTP API no tiene IP fija; Spring Security valida el JWT igualmente. En producción se usaría una integración privada (VPC Link).
 - El frontend se ejecuta en `localhost:4200`; no está desplegado en la nube.
-- Reportería y auditoría (Kafka) se incorporan en la etapa siguiente; Kafka no forma parte de EP3 + EP4.
+- Kafka (3 ZooKeeper + 3 brokers) necesita ~3 GB de RAM: se ejecuta en el computador local con Docker Desktop, no en la EC2 `t3.small`. Los servicios en la EC2 funcionan sin Kafka (los eventos se descartan con un log de error).
+- `reporteria-service` mantiene sus métricas en memoria: al reiniciarse reinicia los contadores (los offsets del grupo se conservan en Kafka).
+- Los tópicos `.DLT` (Dead Letter Topic) son técnicos, para mensajes que no se pudieron procesar; los dos tópicos funcionales son `pedidos.eventos` y `catalogo.stock`.

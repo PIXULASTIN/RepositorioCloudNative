@@ -33,6 +33,7 @@ public class KafkaProducerConfig {
         cfg.put(ProducerConfig.LINGER_MS_CONFIG, p.lingerMs());
         cfg.put(ProducerConfig.REQUEST_TIMEOUT_MS_CONFIG, p.requestTimeoutMs());
         cfg.put(ProducerConfig.DELIVERY_TIMEOUT_MS_CONFIG, p.deliveryTimeoutMs());
+        cfg.put(ProducerConfig.MAX_BLOCK_MS_CONFIG, p.maxBlockMs());
 
         // JSON con el ObjectMapper de Spring (fechas ISO-8601). Sin cabecera de tipo Java:
         // asi cualquier microservicio puede leer el evento con su propio DTO.

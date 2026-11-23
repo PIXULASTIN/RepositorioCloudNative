@@ -1,0 +1,23 @@
+app:
+  stock:
+    umbral-bajo: 5
+  kafka:
+    bootstrap-servers: localhost:9092
+    topics:
+      pedidos: pedidos.eventos
+      stock: catalogo.stock
+    consumer:
+      auto-startup: false               # en tests no se conectan los listeners
+      auto-offset-reset: earliest
+      max-poll-records: 100
+      groups:
+        pedidos: reporteria-pedidos
+        stock: reporteria-stock
+      concurrency:
+        pedidos: 3
+        stock: 1
+      retry:
+        initial-interval-ms: 100
+        multiplier: 2.0
+        max-interval-ms: 500
+        max-retries: 2

@@ -86,3 +86,18 @@ app:
       linger-ms: 5
       request-timeout-ms: 15000
       delivery-timeout-ms: 30000
+      max-block-ms: 3000              # si Kafka no responde, send() falla rapido (no bloquea el pedido)
+    consumer:
+      auto-startup: ${KAFKA_CONSUMER_AUTO_STARTUP:true}   # false = no inicia los @KafkaListener
+      auto-offset-reset: earliest
+      concurrency: 1
+      max-poll-records: 100
+      groups:
+        pedidos-stock: pedidos-stock    # consumer group de este servicio sobre catalogo.stock
+      retry:                            # reintentos con backoff exponencial antes de enviar a la DLT
+        initial-interval-ms: 1000
+        multiplier: 2.0
+        max-interval-ms: 5000
+        max-retries: 3
+  stock:
+    umbral-bajo: 5                      # stock <= umbral genera alerta

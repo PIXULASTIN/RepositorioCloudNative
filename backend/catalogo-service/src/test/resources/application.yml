@@ -7,3 +7,25 @@ spring:
   jpa:
     hibernate:
       ddl-auto: create-drop
+
+# EP5: en tests no se conecta a Kafka
+app:
+  kafka:
+    bootstrap-servers: localhost:9092
+    create-topics: false
+    topics:
+      stock:
+        name: catalogo.stock
+        partitions: 3
+        replicas: 3
+        retention-ms: 0               # 0 = no se define (compact conserva el ultimo valor por key)
+        cleanup-policy: compact
+        min-insync-replicas: 2
+    producer:
+      acks: all
+      retries: 3
+      enable-idempotence: true
+      linger-ms: 5
+      request-timeout-ms: 15000
+      delivery-timeout-ms: 30000
+      max-block-ms: 3000              # si Kafka no responde, send() falla rapido

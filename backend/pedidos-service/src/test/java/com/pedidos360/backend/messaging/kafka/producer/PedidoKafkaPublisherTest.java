@@ -34,7 +34,10 @@ class PedidoKafkaPublisherTest {
                 new KafkaAppProperties.Topics(
                         new KafkaAppProperties.Topic("pedidos.eventos", 3, 3, 604800000L, "delete", 2),
                         new KafkaAppProperties.Topic("catalogo.stock", 3, 3, 0L, "compact", 2)),
-                new KafkaAppProperties.Producer("all", 3, true, 5, 15000, 30000));
+                new KafkaAppProperties.Producer("all", 3, true, 5, 15000, 30000, 3000),
+                new KafkaAppProperties.Consumer(false, "earliest", 1, 100,
+                        new KafkaAppProperties.Groups("pedidos-stock"),
+                        new KafkaAppProperties.Retry(100, 2.0, 500, 2)));
         return new PedidoKafkaPublisher(kafkaTemplate, props);
     }
 
