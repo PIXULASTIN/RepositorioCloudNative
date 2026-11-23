@@ -2,7 +2,7 @@
 
 Sistema de gestión de pedidos y catálogo de productos con stock, construido como proyecto de **DSY1107 — Desarrollo Cloud Native I**.
 
-**Integrantes:** _(completar con los nombres del grupo)_
+**Integrantes:**  Agustin Llanten, Ignacio Perez
 
 ## Arquitectura
 
