@@ -14,6 +14,20 @@ spring:
 
 # EP5: en tests no se conecta a Kafka (no crea topicos al arrancar)
 app:
+  rabbit:
+    exchanges:
+      direct: pedidos.direct
+      topic: pedidos.topic
+      dlx: pedidos.dlx
+    queues:
+      aceptados: pedidos.aceptados.queue
+      despachos: pedidos.despachos.queue
+      notificaciones: pedidos.notificaciones.queue
+    routing-keys:
+      aceptado: pedido.aceptado
+      despachado: pedido.despachado
+      notificaciones: pedido.*
+    dlq-suffix: .dlq
   kafka:
     bootstrap-servers: localhost:9092
     create-topics: false

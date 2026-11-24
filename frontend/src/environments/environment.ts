@@ -1,5 +1,5 @@
-const GATEWAY_URL = 'https://70vjuankj1.execute-api.us-east-1.amazonaws.com/api';
-
+// const GATEWAY_URL = 'https://70vjuankj1.execute-api.us-east-1.amazonaws.com/api';   // AWS (restaurar para el despliegue en la nube)
+const GATEWAY_URL = '';   // local: usa localhost:8081 y :8082
 export const environment = {
   production: false,
   ordersApiUrl: GATEWAY_URL || 'http://localhost:8081/api',

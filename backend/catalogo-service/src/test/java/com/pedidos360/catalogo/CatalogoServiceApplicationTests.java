@@ -2,6 +2,8 @@ package com.pedidos360.catalogo;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.context.TestPropertySource;
 
 @SpringBootTest
@@ -10,8 +12,10 @@ import org.springframework.test.context.TestPropertySource;
 })
 class CatalogoServiceApplicationTests {
 
+    @MockBean
+    JwtDecoder jwtDecoder;   // evita consultar a Entra ID durante el test
+
     @Test
     void contextLoads() {
-        // confirma que la app arranca sin errores de configuracion
     }
 }

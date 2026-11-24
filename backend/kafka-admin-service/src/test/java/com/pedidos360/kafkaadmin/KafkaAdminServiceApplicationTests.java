@@ -2,6 +2,8 @@ package com.pedidos360.kafkaadmin;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.context.TestPropertySource;
 
 @SpringBootTest
@@ -9,6 +11,9 @@ import org.springframework.test.context.TestPropertySource;
         "spring.security.oauth2.resourceserver.jwt.issuer-uri=https://login.microsoftonline.com/00000000-0000-0000-0000-000000000000/v2.0"
 })
 class KafkaAdminServiceApplicationTests {
+
+    @MockBean
+    JwtDecoder jwtDecoder;
 
     @Test
     void contextLoads() {
